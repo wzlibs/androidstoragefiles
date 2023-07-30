@@ -1,12 +1,12 @@
-package com.wzlibs.androidstoragefiles.loader
+package com.wzlibs.androidstoragefiles.photo
 
 import android.content.Context
 import android.database.Cursor
 import android.os.Build
 import android.provider.MediaStore
-import com.wzlibs.androidstoragefiles.model.AlbumPhoto
-import com.wzlibs.androidstoragefiles.model.PhotoFile
-import com.wzlibs.androidstoragefiles.model.SortType
+import com.wzlibs.androidstoragefiles.photo.model.AlbumPhoto
+import com.wzlibs.androidstoragefiles.photo.model.PhotoFile
+import com.wzlibs.androidstoragefiles.common.SortType
 import com.wzlibs.androidstoragefiles.utils.Utils
 import java.io.File
 
@@ -22,6 +22,7 @@ class PhotoFileLoader(private val context: Context) {
         arrayOf(
             MediaStore.Images.Media.DISPLAY_NAME,
             MediaStore.Images.Media.DATA,
+            MediaStore.Images.Media.DATE_MODIFIED,
             MediaStore.Images.Media.SIZE,
         )
     }
@@ -40,12 +41,14 @@ class PhotoFileLoader(private val context: Context) {
         cursor: Cursor,
         urlColumn: Int,
         nameColumn: Int,
+        dateModifierColumn: Int,
         sizeColumn: Int
     ): PhotoFile {
         val path = cursor.getString(urlColumn)
         return PhotoFile(
             cursor.getString(urlColumn) ?: File(path).nameWithoutExtension,
             cursor.getString(nameColumn),
+            cursor.getLong(dateModifierColumn),
             cursor.getLong(sizeColumn)
         )
     }
@@ -58,6 +61,7 @@ class PhotoFileLoader(private val context: Context) {
                     getPhoto(
                         cursor, cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME),
                         cursor.getColumnIndex(MediaStore.Images.Media.DATA),
+                        cursor.getColumnIndex(MediaStore.Images.Media.DATE_MODIFIED),
                         cursor.getColumnIndex(MediaStore.Images.Media.SIZE)
                     )
                 )
@@ -74,6 +78,7 @@ class PhotoFileLoader(private val context: Context) {
                 val photo = getPhoto(
                     cursor, cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME),
                     cursor.getColumnIndex(MediaStore.Images.Media.DATA),
+                    cursor.getColumnIndex(MediaStore.Images.Media.DATE_MODIFIED),
                     cursor.getColumnIndex(MediaStore.Images.Media.SIZE)
                 )
                 val listPhotos = maps[Utils.getAlbumPath(photo.url)]
