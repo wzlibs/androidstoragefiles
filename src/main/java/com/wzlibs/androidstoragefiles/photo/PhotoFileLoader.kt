@@ -71,8 +71,16 @@ class PhotoFileLoader(private val context: Context) {
         return photoFiles
     }
 
-    fun getAlbumPhotos(sortType: SortType = SortType.DESC): List<AlbumPhoto> {
+    fun getAlbumPhotos(
+        sortType: SortType = SortType.DESC,
+        includesAllFolder: Boolean = false,
+        allFolderName: String? = null
+    ): List<AlbumPhoto> {
         val maps = HashMap<String, ArrayList<PhotoFile>>()
+        var allPhotos: ArrayList<PhotoFile>? = null
+        if (includesAllFolder) {
+            allPhotos = ArrayList()
+        }
         query(sortType)?.use { cursor ->
             while (cursor.moveToNext()) {
                 val photo = getPhoto(
@@ -81,6 +89,7 @@ class PhotoFileLoader(private val context: Context) {
                     cursor.getColumnIndex(MediaStore.Images.Media.DATE_MODIFIED),
                     cursor.getColumnIndex(MediaStore.Images.Media.SIZE)
                 )
+                allPhotos?.add(photo)
                 val listPhotos = maps[Utils.getAlbumPath(photo.url)]
                 if (listPhotos == null) {
                     maps[Utils.getAlbumPath(photo.url)] =
@@ -94,6 +103,10 @@ class PhotoFileLoader(private val context: Context) {
         val albumPhotos = ArrayList<AlbumPhoto>()
         maps.forEach {
             albumPhotos.add(AlbumPhoto(File(it.key).name, it.value))
+        }
+        allPhotos?.let {
+            val albumPhoto = AlbumPhoto(allFolderName ?: "All photos", it)
+            albumPhotos.add(0, albumPhoto)
         }
         return albumPhotos
     }
