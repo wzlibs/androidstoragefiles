@@ -39,6 +39,7 @@ class PhotoFileLoader(private val context: Context) {
 
     private fun getPhoto(
         cursor: Cursor,
+        idColumn: Int,
         urlColumn: Int,
         nameColumn: Int,
         dateModifierColumn: Int,
@@ -46,6 +47,7 @@ class PhotoFileLoader(private val context: Context) {
     ): PhotoFile {
         val path = cursor.getString(urlColumn)
         return PhotoFile(
+            cursor.getInt(idColumn),
             cursor.getString(urlColumn) ?: File(path).nameWithoutExtension,
             cursor.getString(nameColumn),
             cursor.getLong(dateModifierColumn),
@@ -59,7 +61,9 @@ class PhotoFileLoader(private val context: Context) {
             while (cursor.moveToNext()) {
                 photoFiles.add(
                     getPhoto(
-                        cursor, cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME),
+                        cursor,
+                        cursor.getColumnIndex(MediaStore.Images.Media._ID),
+                        cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME),
                         cursor.getColumnIndex(MediaStore.Images.Media.DATA),
                         cursor.getColumnIndex(MediaStore.Images.Media.DATE_MODIFIED),
                         cursor.getColumnIndex(MediaStore.Images.Media.SIZE)
@@ -84,7 +88,9 @@ class PhotoFileLoader(private val context: Context) {
         query(sortType)?.use { cursor ->
             while (cursor.moveToNext()) {
                 val photo = getPhoto(
-                    cursor, cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME),
+                    cursor,
+                    cursor.getColumnIndex(MediaStore.Images.Media._ID),
+                    cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME),
                     cursor.getColumnIndex(MediaStore.Images.Media.DATA),
                     cursor.getColumnIndex(MediaStore.Images.Media.DATE_MODIFIED),
                     cursor.getColumnIndex(MediaStore.Images.Media.SIZE)
