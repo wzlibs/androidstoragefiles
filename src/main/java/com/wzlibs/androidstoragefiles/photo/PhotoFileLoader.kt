@@ -20,6 +20,7 @@ class PhotoFileLoader(private val context: Context) {
 
     private val projection by lazy {
         arrayOf(
+            MediaStore.Images.Media._ID,
             MediaStore.Images.Media.DISPLAY_NAME,
             MediaStore.Images.Media.DATA,
             MediaStore.Images.Media.DATE_MODIFIED,
@@ -47,7 +48,7 @@ class PhotoFileLoader(private val context: Context) {
     ): PhotoFile {
         val path = cursor.getString(urlColumn)
         return PhotoFile(
-            cursor.getInt(idColumn),
+            cursor.getLong(idColumn),
             cursor.getString(urlColumn) ?: File(path).nameWithoutExtension,
             cursor.getString(nameColumn),
             cursor.getLong(dateModifierColumn),
