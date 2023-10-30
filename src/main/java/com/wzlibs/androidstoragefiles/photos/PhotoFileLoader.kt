@@ -1,40 +1,31 @@
-package com.wzlibs.androidstoragefiles.photo
+package com.wzlibs.androidstoragefiles.photos
 
 import android.content.Context
 import android.database.Cursor
+import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import com.wzlibs.androidstoragefiles.photo.model.AlbumPhoto
-import com.wzlibs.androidstoragefiles.photo.model.PhotoFile
-import com.wzlibs.androidstoragefiles.common.SortType
+import com.wzlibs.androidstoragefiles.BaseLoader
+import com.wzlibs.androidstoragefiles.models.MediaFile
+import com.wzlibs.androidstoragefiles.models.MediaPack
 import com.wzlibs.androidstoragefiles.utils.Utils
 import java.io.File
 
-class PhotoFileLoader(private val context: Context) {
+class PhotoFileLoader(context: Context): BaseLoader(context) {
 
-    private val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    override val collection: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
     } else {
         MediaStore.Images.Media.EXTERNAL_CONTENT_URI
     }
 
-    private val projection by lazy {
+    override val projection by lazy {
         arrayOf(
             MediaStore.Images.Media._ID,
             MediaStore.Images.Media.DISPLAY_NAME,
             MediaStore.Images.Media.DATA,
             MediaStore.Images.Media.DATE_MODIFIED,
             MediaStore.Images.Media.SIZE,
-        )
-    }
-
-    private fun query(sortType: SortType = SortType.DESC): Cursor? {
-        return context.contentResolver.query(
-            collection,
-            projection,
-            null,
-            null,
-            "${MediaStore.Images.Media.DATE_MODIFIED} ${sortType.name}"
         )
     }
 
@@ -56,9 +47,9 @@ class PhotoFileLoader(private val context: Context) {
         )
     }
 
-    fun getPhotos(sortType: SortType = SortType.DESC): List<PhotoFile> {
+    override fun getMediaFiles(): List<MediaFile> {
         val photoFiles = ArrayList<PhotoFile>()
-        query(sortType)?.use { cursor ->
+        query()?.use { cursor ->
             while (cursor.moveToNext()) {
                 photoFiles.add(
                     getPhoto(
@@ -76,17 +67,9 @@ class PhotoFileLoader(private val context: Context) {
         return photoFiles
     }
 
-    fun getAlbumPhotos(
-        sortType: SortType = SortType.DESC,
-        includesAllFolder: Boolean = false,
-        allFolderName: String? = null
-    ): List<AlbumPhoto> {
+    override fun getMediaPacks(): List<MediaPack> {
         val maps = HashMap<String, ArrayList<PhotoFile>>()
-        var allPhotos: ArrayList<PhotoFile>? = null
-        if (includesAllFolder) {
-            allPhotos = ArrayList()
-        }
-        query(sortType)?.use { cursor ->
+        query()?.use { cursor ->
             while (cursor.moveToNext()) {
                 val photo = getPhoto(
                     cursor,
@@ -96,10 +79,9 @@ class PhotoFileLoader(private val context: Context) {
                     cursor.getColumnIndex(MediaStore.Images.Media.DATE_MODIFIED),
                     cursor.getColumnIndex(MediaStore.Images.Media.SIZE)
                 )
-                allPhotos?.add(photo)
-                val listPhotos = maps[Utils.getAlbumPath(photo.url)]
+                val listPhotos = maps[Utils.getAlbumPath(photo.path)]
                 if (listPhotos == null) {
-                    maps[Utils.getAlbumPath(photo.url)] =
+                    maps[Utils.getAlbumPath(photo.path)] =
                         ArrayList<PhotoFile>().apply { add(photo) }
                 } else {
                     listPhotos.add(photo)
@@ -107,15 +89,11 @@ class PhotoFileLoader(private val context: Context) {
             }
             cursor.close()
         }
-        val albumPhotos = ArrayList<AlbumPhoto>()
+        val mediaPacks = ArrayList<MediaPack>()
         maps.forEach {
-            albumPhotos.add(AlbumPhoto(File(it.key).name, it.value))
+            mediaPacks.add(MediaPack(File(it.key).name, it.value))
         }
-        allPhotos?.let {
-            val albumPhoto = AlbumPhoto(allFolderName ?: "All photos", it)
-            albumPhotos.add(0, albumPhoto)
-        }
-        return albumPhotos
+        return mediaPacks
     }
 
 }
